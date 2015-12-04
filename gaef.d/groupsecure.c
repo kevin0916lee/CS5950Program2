@@ -14,8 +14,11 @@
   b.BLOWFISH reference: https://en.wikipedia.org/wiki/Blowfish_(cipher)
 
 6. TODO:
-  a.add comments
-  b.clean up the code
+  a.should check pubring.gpg exists
+  b.indicate which key is used to encrypt the file
+  c.let owner of the file decide whether to delete the file or not
+  EX1.add comments
+  EX2.clean up the code
 ----------------------------------------------------------*/
 #include <stdio.h>
 #include <unistd.h>
@@ -117,6 +120,9 @@ void getPublicKeyName(char *keyFile, int id) {
 	if (keyFile == NULL) { perror("malloc"); exit(__LINE__); }
 	strcpy(keyFile, userInfo->pw_dir);
 	strcat(keyFile, "/.gnupg/pubring.gpg");
+
+	//TODO should check pubring.gpg exists.
+
 	printf("Getting key from <%s>\n", keyFile);
 }
 
@@ -277,6 +283,7 @@ int main(int argc, char const *argv[])
 
 	//Get enc file
 	strcpy(encFile, argv[1]);
+	//TODO indicate which key is used to encrypt the file
 	strcat(encFile, ".enc");
 
 
@@ -290,6 +297,7 @@ int main(int argc, char const *argv[])
 	close(encDataFd);
 	free(encDataPtr);
 
+	//TODO let owner of the file decide whether to delete the file or not.
 
 	//Get enc key
 	keyFile = malloc(1024);
