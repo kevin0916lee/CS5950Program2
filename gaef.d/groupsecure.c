@@ -1,3 +1,22 @@
+/*--------------------------------------------------------
+1. Jialiang Chang / Dec 03, 2015:
+
+2. Version log :1.written by Dec 03,2015
+
+3. Precise examples / instructions to run this program:
+> (in working gaef.d folder path)$ make
+> $ ./groupsecure file
+
+4. Aim: initialize and apply the group security scheme to file
+
+5. Notes:
+  a.This is for Fall 2015 CS 5950 program2, taught by Professor Steve Carr, Western Michigan University.
+  b.BLOWFISH reference: https://en.wikipedia.org/wiki/Blowfish_(cipher)
+
+6. TODO:
+  a.add comments
+  b.clean up the code
+----------------------------------------------------------*/
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -16,6 +35,17 @@
 #define  KEYSIZE         56
 #define  BUFSIZE 		 4096
 uid_t uid;
+
+
+void checkCryptNormal(int returnCode, char *routineName, int line){
+  if (cryptStatusError(returnCode)){
+    printf("Error in %s at line %d, return value %d\n",
+	   routineName, line, returnCode);
+    exit(returnCode);
+  }
+}
+
+
 //File owner and states checker
 void fileChecker(char *file){
 	
@@ -83,7 +113,7 @@ void getPublicKeyName(char *keyFile, int id) {
 	struct passwd *userInfo;      
 	userInfo = getpwuid(id);
 	if (userInfo == NULL) { perror("getpwuid"); exit(__LINE__); }
-	keyFile = malloc(1024);
+
 	if (keyFile == NULL) { perror("malloc"); exit(__LINE__); }
 	strcpy(keyFile, userInfo->pw_dir);
 	strcat(keyFile, "/.gnupg/pubring.gpg");
@@ -92,7 +122,7 @@ void getPublicKeyName(char *keyFile, int id) {
 
 
 //Get the encrypted key encrypted by GPG public key
-void encData(char *keyFile, char *encKey, char * encDataPtr, int * encDataSize, int id){
+void encData(char *keyFile, char *encKey, char *encDataPtr, int encDataSize, int id){
 	int  ret;                          /* Return value */
 	int bytesCopied;
   	CRYPT_ENVELOPE dataEnv;    /* Envelope for enc */
@@ -121,9 +151,11 @@ void encData(char *keyFile, char *encKey, char * encDataPtr, int * encDataSize, 
 	checkCryptNormal(ret,"cryptCreateEnvelope",__LINE__);
 	ret=cryptSetAttribute(dataEnv, CRYPT_ENVINFO_KEYSET_ENCRYPT, keyset);
 	checkCryptNormal(ret,"cryptSetAttribute",__LINE__);
-
-	ret=cryptSetAttributeString(dataEnv, CRYPT_ENVINFO_RECIPIENT, 
-	                          userInfoName,strlen(userInfoName));
+	// printf(dataEnv);
+	userInfoName = "Jialiang Chang";
+	// printf("%s\n",userInfoName );
+	ret=cryptSetAttributeString(dataEnv, CRYPT_ENVINFO_RECIPIENT, userInfoName,strlen(userInfoName));
+	// printf(dataEnv);
 	checkCryptNormal(ret,"cryptSetAttributeString",__LINE__);
 	//QQQ
 	ret=cryptSetAttribute(dataEnv, CRYPT_ENVINFO_DATASIZE, KEYSIZE+1);
@@ -170,15 +202,18 @@ int main(int argc, char const *argv[])
   	char          *keyFile;        /* GPG key ring file name */
 	struct passwd *userInfo;       /* Password info for input user */
 	char encFile[BUFSIZE+4];	/* Name to use for Encrypted file */
-	char gpgEncFile[BUFSIZE+7];	/* Name to use for Encrypted file */
+	char gpgKeyFile[BUFSIZE+7];	/* Name to use for Encrypted file */
+
+
 	//Check arguments number 
-	if (argc!=3) {
+	if (argc!=2) {
         printf("slient exit\n");
         exit (1);
 	}
 
+	uid = getuid();
 	//Check if the owner of the file and if the file is not an ordinary file.
-	fileChecker(argv[1]);
+	fileChecker((char *)argv[1]);
 
 	//Generate key using /dev/urandom;
 	keyPtr=malloc(KEYSIZE);
@@ -257,23 +292,23 @@ int main(int argc, char const *argv[])
 
 
 	//Get enc key
+	keyFile = malloc(1024);
 	getPublicKeyName(keyFile, uid);
 
 
-
-	memcpy(gpgEncFile, encFile, sizeof(encFile));
-	strcat(gpgEncFile, "GPGKey");
+	// gpgEncFile = malloc(sizeof(encFile)+3);
+	memcpy(gpgKeyFile, encFile, sizeof(encFile));
+	strcat(gpgKeyFile, "GPGKey");
 
 
 	encDataSize= KEYSIZE + 1 + 1028;//Accoring to the algorithm of the gpg key
 	encDataPtr=malloc(encDataSize);
 	if (encDataPtr==NULL){perror("malloc encData");exit(__LINE__);}
 
-	encDataFd = open(gpgEncFile, O_RDWR|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR);
+	encDataFd = open(gpgKeyFile, O_RDWR|O_CREAT|O_TRUNC, S_IRUSR|S_IWUSR);
+	if (encDataFd<=0){perror("open encDataFd");exit(encDataFd);}
 
 	encData(keyFile, keyPtr, encDataPtr, encDataSize, uid);
-
-	if (encDataFd<=0){perror("open encDataFd");exit(encDataFd);}
 	ret=write(encDataFd,encDataPtr,bytesCopied);
 	if (ret!=bytesCopied){perror("write encData");exit(ret);}
 	close(encDataFd);
