@@ -14,7 +14,7 @@
   b.BLOWFISH reference: https://en.wikipedia.org/wiki/Blowfish_(cipher)
 
 6. TODO:
-  a.should check pubring.gpg exists
+  a.should check pubring.gpg exists//DONE
   b.indicate which key is used to encrypt the file
   c.let owner of the file decide whether to delete the file or not
   EX1.add comments
@@ -115,13 +115,19 @@ void genKey(char * keyPtr, int keySize){
 void getPublicKeyName(char *keyFile, int id) {
 	struct passwd *userInfo;      
 	userInfo = getpwuid(id);
+	// printf(userInfo->pw_dir);
+	// printf(userInfo->pw_name);
 	if (userInfo == NULL) { perror("getpwuid"); exit(__LINE__); }
 
 	if (keyFile == NULL) { perror("malloc"); exit(__LINE__); }
 	strcpy(keyFile, userInfo->pw_dir);
 	strcat(keyFile, "/.gnupg/pubring.gpg");
 
-	//TODO should check pubring.gpg exists.
+	//TODO should check pubring.gpg exists.//DONE
+	if ( open(keyFile,O_RDONLY) == -1 ) {
+		printf("Failed to open or find: %s", keyFile);
+		exit(1);
+	}
 
 	printf("Getting key from <%s>\n", keyFile);
 }
@@ -158,7 +164,7 @@ void encData(char *keyFile, char *encKey, char *encDataPtr, int encDataSize, int
 	ret=cryptSetAttribute(dataEnv, CRYPT_ENVINFO_KEYSET_ENCRYPT, keyset);
 	checkCryptNormal(ret,"cryptSetAttribute",__LINE__);
 	// printf(dataEnv);
-	userInfoName = "Jialiang Chang";
+	// userInfoName = "Jialiang Chang";
 	// printf("%s\n",userInfoName );
 	ret=cryptSetAttributeString(dataEnv, CRYPT_ENVINFO_RECIPIENT, userInfoName,strlen(userInfoName));
 	// printf(dataEnv);
@@ -306,7 +312,7 @@ int main(int argc, char const *argv[])
 
 	// gpgEncFile = malloc(sizeof(encFile)+3);
 	memcpy(gpgKeyFile, encFile, sizeof(encFile));
-	strcat(gpgKeyFile, "GPGKey");
+	strcat(gpgKeyFile, ".key");
 
 
 	encDataSize= KEYSIZE + 1 + 1028;//Accoring to the algorithm of the gpg key
