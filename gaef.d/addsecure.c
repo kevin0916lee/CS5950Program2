@@ -94,8 +94,24 @@ main(int argc, char **argv){
   int         encDataSize;       /* Size of encrypted data */
   struct passwd *userInfo;       /* Password info for input user */
   char          *keyFile;        /* GPG key ring file name */
-  char          *fileKeyName = malloc(strlen(argv[0])+strlen(argv[1]+10);
-  char          *outputFileKeyName = malloc(strlen(argv[0])+strlen(argv[1]+10);
+  
+  uid_t ownerID = getuid();
+  struct passwd *owner_pws = getpwuid(ownerID);
+  char* owner_pwname = owner_pws->pw_name;//get the user login name;
+  char* owner_pwdir = owner_pws->pw_dir;
+  char          *fileKeyName = malloc(owner_pwname)+strlen(argv[2]+10);
+  fileKeyName = strcat(argv[2]+".enc.");
+  fileKeyName = strcat(fileKeyName,owner_pwname);
+  fileKeyName = strcat(fileKeyName,".key");
+  uid_t userID = getuid();
+  struct passwd *user_pws = getpwuid(userID);
+  char* user_pwname = user_pws->pw_name;//get the user login name;
+  char* user_pwdir = user_pws->pw_dir;
+  char          *outputFileKeyName = malloc(user_pwname)+strlen(argv[2]+10);
+  outputFileKeyName = strcat(argv[2]+".enc.");
+  outputFileKeyName = strcat(outputFileKeyName,user_pwname);
+  outputFileKeyName = strcat(outputFileKeyName,".key");
+  
  /*==============================================
      Check Check Check Check Check Check
     ==============================================
@@ -135,10 +151,10 @@ main(int argc, char **argv){
     =================================================
   */
 
-  keyFile=malloc(  strlen(userInfo->pw_dir )
+  keyFile=malloc(  strlen(owner_pw_dir )
                  + strlen("/.gnupg/secring.gpg") + 1);
   if (keyFile==NULL){perror("malloc");exit(__LINE__);}
-  strcpy(keyFile,userInfo->pw_dir);
+  strcpy(keyFile,owner_pw_dir);
   strcat(keyFile,"/.gnupg/secring.gpg");
   printf("Getting secret key from <%s>\n",keyFile);
 
