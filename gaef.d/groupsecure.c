@@ -216,6 +216,10 @@ int main(int argc, char const *argv[])
 	char encFile[BUFSIZE+4];	/* Name to use for Encrypted file */
 	char gpgKeyFile[BUFSIZE+7];	/* Name to use for Encrypted file */
 
+	struct passwd *pws;       /* info for input user */
+	char   *pwname;       /* username */
+	char   *pwdir;        /* home directory */
+
 
 	//Check arguments number 
 	if (argc!=2) {
@@ -224,6 +228,9 @@ int main(int argc, char const *argv[])
 	}
 
 	uid = getuid();
+	pws = getpwuid(uid);
+	pwname = pws->pw_name;//get the user login name;
+	pwdir = pws->pw_dir;
 	//Check if the owner of the file and if the file is not an ordinary file.
 	fileChecker((char *)argv[1]);
 
@@ -312,6 +319,9 @@ int main(int argc, char const *argv[])
 
 	// gpgEncFile = malloc(sizeof(encFile)+3);
 	memcpy(gpgKeyFile, encFile, sizeof(encFile));
+
+	strcat(gpgKeyFile, ".");
+	strcat(gpgKeyFile, pwname);
 	strcat(gpgKeyFile, ".key");
 
 
