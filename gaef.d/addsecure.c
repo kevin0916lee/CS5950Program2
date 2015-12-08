@@ -162,7 +162,7 @@ main(int argc, char **argv){
   struct passwd *owner_pws = getpwuid(ownerID);
   char* owner_pwname = owner_pws->pw_name;//get the user login name;
   char* owner_pwdir = owner_pws->pw_dir;
-  char          *fileKeyName = malloc(strlen(owner_pwname)+strlen(argv[1]+20));
+  char          *fileKeyName = malloc(strlen(owner_pwname)+strlen(argv[2]+20));
 
   memcpy(fileKeyName,argv[2],strlen(argv[2])+1);
   strcat(fileKeyName,".");
@@ -198,20 +198,26 @@ main(int argc, char **argv){
   checkCryptNormal(ret,"cryptAddRandom",__LINE__);
   
   
-  /*=============================================
+ /*=============================================
     Open DATAFILE and get data
     =============================================
   */
   encDataFd=open(fileKeyName,O_RDONLY);
   if (encDataFd<=0){perror("open clrData");exit(encDataFd);}
   ret=fstat(encDataFd,&encDataFileInfo);
-  if (ret!=0){perror("fstat clrDataFd");exit(ret);}
+  if (ret!=0){perror("fstat encDataFd");exit(ret);}
   encDataSize=encDataFileInfo.st_size;
   encDataPtr=malloc(encDataFileInfo.st_size);
-  if (encDataPtr==NULL){perror("malloc clrData");exit(__LINE__);}
+  if (encDataPtr==NULL){perror("malloc encData");exit(__LINE__);}
   ret=read(encDataFd,encDataPtr,encDataSize);
-  if (ret!=encDataSize){perror("read clrData");exit(ret);}
+  if (ret!=encDataSize){perror("read encData");exit(ret);}
   close(encDataFd);
+
+  
+  if (encDataPtr==NULL){perror("malloc");exit(__LINE__);}
+  ret=cryptPopData(dataEnv,encDataPtr,encDataSize,&bytesCopied);
+  printf("cryptPopData returned <%d> bytes of encrypted data\n",bytesCopied);
+  encDataSize=bytesCopied;
   
   /*=================================================
     Decrypt the data
@@ -233,7 +239,7 @@ main(int argc, char **argv){
   checkCryptNormal(ret,"cryptCreateEnvelope",__LINE__);
   ret=cryptSetAttribute(dataEnv, CRYPT_ENVINFO_KEYSET_DECRYPT, keyset);
   checkCryptNormal(ret,"cryptSetAttribute",__LINE__);
-
+  
   ret=cryptPushData(dataEnv,encDataPtr,encDataSize,&bytesCopied);
   /*  Expect non-zero return -- indicates need private key */
   ret=cryptGetAttribute(dataEnv, CRYPT_ATTRIBUTE_CURRENT, &reqAttrib); 
@@ -286,7 +292,7 @@ main(int argc, char **argv){
   ret=cryptFlushData(dataEnv);
   checkCryptNormal(ret,"cryptFlushData",__LINE__);
 
-  clrDataSize=strlen(argv[2])+1;
+  clrDataSize=strlen(encDataPtr)+1;
   clrDataPtr=malloc(clrDataSize);
   if (clrDataPtr==NULL){perror("malloc");exit(__LINE__);}
   bzero(clrDataPtr,clrDataSize);
@@ -338,9 +344,9 @@ main(int argc, char **argv){
   ret=cryptSetAttribute(dataEnv, CRYPT_ENVINFO_KEYSET_ENCRYPT, keyset);
   checkCryptNormal(ret,"cryptSetAttribute",__LINE__);
   ret=cryptSetAttributeString(dataEnv, CRYPT_ENVINFO_RECIPIENT, 
-                              "pwcorbet",strlen(argv[1]));
+                              userInfo,strlen(argv[1]));
   checkCryptNormal(ret,"cryptSetAttributeString",__LINE__);
-  ret=cryptSetAttribute(dataEnv, CRYPT_ENVINFO_DATASIZE, strlen(argv[2])+1);
+  ret=cryptSetAttribute(dataEnv, CRYPT_ENVINFO_DATASIZE, strlen(argv[1])+1);
 
   ret=cryptPushData(dataEnv,clrDataPtr,strlen(clrDataPtr)+1,&bytesCopied);
   checkCryptNormal(ret,"cryptPushData",__LINE__);
