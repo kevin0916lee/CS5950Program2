@@ -68,7 +68,62 @@ void fileChecker(char *file){
     }
 
 }
+void encData(char *keyFile, char *encKey, char *encDataPtr, int encDataSize, int id){
+	int  ret;                          /* Return value */
+	int bytesCopied;
+  	CRYPT_ENVELOPE dataEnv;    /* Envelope for enc */
+	CRYPT_KEYSET   keyset;     /* GPG keyset */
 
+
+	cryptInit();
+	struct passwd *userInfo;     
+	char *userInfoName;
+  	userInfo = getpwuid(id);
+	userInfoName = userInfo->pw_name;
+	ret=cryptAddRandom( NULL , CRYPT_RANDOM_SLOWPOLL);
+  	checkCryptNormal(ret,"cryptAddRandom",__LINE__);
+
+  	/*====================================================
+    Encrypt key with GPG public key
+    Email address is for recipient
+    ===================================================
+  	*/
+
+  
+	ret=cryptKeysetOpen(&keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, keyFile, CRYPT_KEYOPT_READONLY);
+	free(keyFile);
+	checkCryptNormal(ret,"cryptKeysetOpen",__LINE__);
+	ret=cryptCreateEnvelope(&dataEnv, CRYPT_UNUSED, CRYPT_FORMAT_PGP);
+	checkCryptNormal(ret,"cryptCreateEnvelope",__LINE__);
+	ret=cryptSetAttribute(dataEnv, CRYPT_ENVINFO_KEYSET_ENCRYPT, keyset);
+	checkCryptNormal(ret,"cryptSetAttribute",__LINE__);
+	// printf(dataEnv);
+	// userInfoName = "Jialiang Chang";
+	// printf("%s\n",userInfoName );
+	ret=cryptSetAttributeString(dataEnv, CRYPT_ENVINFO_RECIPIENT, userInfoName,strlen(userInfoName));
+	// printf(dataEnv);
+	checkCryptNormal(ret,"cryptSetAttributeString",__LINE__);
+	//QQQ
+	ret=cryptSetAttribute(dataEnv, CRYPT_ENVINFO_DATASIZE, KEYSIZE+1);
+
+	ret=cryptPushData(dataEnv,encKey,KEYSIZE+1,&bytesCopied);
+	checkCryptNormal(ret,"cryptPushData",__LINE__);
+	ret=cryptFlushData(dataEnv);
+	checkCryptNormal(ret,"cryptFlushData",__LINE__);
+
+	// encDataSize=strlen(argv[2])+1+1028;
+	// encDataPtr=malloc(encDataSize);
+
+	if (encDataPtr==NULL){perror("malloc");exit(__LINE__);}
+	ret=cryptPopData(dataEnv,encDataPtr,encDataSize,&bytesCopied);
+	printf("cryptPopData returned <%d> bytes of encrypted data\n",bytesCopied);
+	encDataSize=bytesCopied;
+
+	ret=cryptDestroyEnvelope(dataEnv);  
+	checkCryptNormal(ret,"cryptDestroyEnvelope",__LINE__);
+	cryptKeysetClose(keyset);
+	checkCryptNormal(ret,"cryptKeysetClose",__LINE__);
+}
 void checkCryptNormal(int returnCode, char *routineName, int line){
   if (cryptStatusError(returnCode)){
     printf("Error in %s at line %d, return value %d\n",
@@ -109,7 +164,7 @@ main(int argc, char **argv){
   char* owner_pwdir = owner_pws->pw_dir;
   char          *fileKeyName = malloc(strlen(owner_pwname)+strlen(argv[1]+20));
 
-  memcpy(fileKeyName,argv[2],sizeof(argv[2])+1);
+  memcpy(fileKeyName,argv[2],strlen(argv[2])+1);
   strcat(fileKeyName,".");
   strcat(fileKeyName,owner_pwname);
   
@@ -143,31 +198,32 @@ main(int argc, char **argv){
   checkCryptNormal(ret,"cryptAddRandom",__LINE__);
   
   
-   /*=============================================
+  /*=============================================
     Open DATAFILE and get data
     =============================================
   */
-  printf("%s\n",fileKeyName);
   encDataFd=open(fileKeyName,O_RDONLY);
-  if (clrDataFd<=0){perror("open encData");exit(encDataFd);}
+  if (encDataFd<=0){perror("open clrData");exit(encDataFd);}
   ret=fstat(encDataFd,&encDataFileInfo);
-  if (ret!=0){perror("fstat encDataFd");exit(ret);}
+  if (ret!=0){perror("fstat clrDataFd");exit(ret);}
   encDataSize=encDataFileInfo.st_size;
   encDataPtr=malloc(encDataFileInfo.st_size);
-  if (encDataPtr==NULL){perror("malloc encData");exit(__LINE__);}
+  if (encDataPtr==NULL){perror("malloc clrData");exit(__LINE__);}
   ret=read(encDataFd,encDataPtr,encDataSize);
-  if (ret!=encDataSize){perror("read encData");exit(ret);}
-  close(clrDataFd);
+  if (ret!=encDataSize){perror("read clrData");exit(ret);}
+  close(encDataFd);
+  
   /*=================================================
     Decrypt the data
     =================================================
   */
-
-  keyFile=malloc(  strlen(owner_pwdir)
+	
+  keyFile=malloc(strlen(owner_pwdir)
                  + strlen("/.gnupg/secring.gpg") + 1);
   if (keyFile==NULL){perror("malloc");exit(__LINE__);}
-  strcpy(keyFile,userInfo->pw_dir);
+  strcpy(keyFile,owner_pwdir);
   strcat(keyFile,"/.gnupg/secring.gpg");
+  printf("%s\n",keyFile);
   printf("Getting secret key from <%s>\n",keyFile);
 
   ret=cryptKeysetOpen(&keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, keyFile, CRYPT_KEYOPT_READONLY);
@@ -246,8 +302,7 @@ main(int argc, char **argv){
   printf("Bytes decrypted <%d>\n",bytesCopied);
   for (i=0;i<bytesCopied;i++){printf("%c",clrDataPtr[i]);}
 
-  ret=cryptEnd();
-  checkCryptNormal(ret,"cryptEnd",__LINE__);
+
   
   /*====================================================
     Part2 Encrypt the key with user's private key 
@@ -311,7 +366,7 @@ main(int argc, char **argv){
   */
 
   
-
+  printf("%s\n",outputFileKeyName);
   encDataFd=open(outputFileKeyName,O_RDWR|O_CREAT|O_TRUNC,S_IRUSR|S_IWUSR);
   if (encDataFd<=0){perror("open encDataFd");exit(encDataFd);}
   ret=write(encDataFd,encDataPtr,bytesCopied);
