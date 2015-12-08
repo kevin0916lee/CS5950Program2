@@ -25,6 +25,8 @@ Compilation: gcc -o skelSoln -lcl -ldl -lresolv -lpthread
 #include <string.h>
 #include <termios.h>
 #include <pwd.h>
+#define  SYMMETRIC_ALG   CRYPT_ALGO_BLOWFISH
+#define  KEYSIZE         56
 void fileChecker(char *file){
 	
 	uid_t ownerID;
@@ -47,7 +49,7 @@ void fileChecker(char *file){
 
     ownerID = fs.st_uid;
 
-	uid = getuid();
+	uid_t uid = getuid();
 
 	if (ownerID != uid) {
 		printf("slient exit\n");
@@ -75,7 +77,7 @@ void checkCryptNormal(int returnCode, char *routineName, int line){
   }
 }
 main(int argc, char **argv){
-
+ 
   int  ret;            /* Return code */
   int  i;              /* Loop iterator */
   int  bytesCopied;    /* Bytes output by cryptlib enc/dec ops */
@@ -83,6 +85,9 @@ main(int argc, char **argv){
 
   CRYPT_ENVELOPE dataEnv;    /* Envelope for enc/dec */
   CRYPT_KEYSET   keyset;     /* GPG keyset */
+  CRYPT_CONTEXT   symContext;        /* Key context */
+  char            *keyPtr;           /* Pointer to key */
+  
   char label[100];           /* Private key label */
   int  labelLength;          /* Length of label */
   char passbuf[1024];        /* Buffer for GPG key passphrase */
@@ -90,8 +95,11 @@ main(int argc, char **argv){
 
   char        *clrDataPtr;       /* Pointer to clear text */
   int         clrDataSize;       /* Size of clear text */
+  int         clrDataFd;             /* Pointer to clear text file */
   char        *encDataPtr;       /* Pointer to encrypted data */
   int         encDataSize;       /* Size of encrypted data */
+  int         encDataFd;             /* Pointer to encrypted text file */
+  struct stat encDataFileInfo;       /* fstat return for encrypted data file */
   struct passwd *userInfo;       /* Password info for input user */
   char          *keyFile;        /* GPG key ring file name */
   
@@ -99,18 +107,25 @@ main(int argc, char **argv){
   struct passwd *owner_pws = getpwuid(ownerID);
   char* owner_pwname = owner_pws->pw_name;//get the user login name;
   char* owner_pwdir = owner_pws->pw_dir;
-  char          *fileKeyName = malloc(owner_pwname)+strlen(argv[2]+10);
-  fileKeyName = strcat(argv[2]+".enc.");
-  fileKeyName = strcat(fileKeyName,owner_pwname);
-  fileKeyName = strcat(fileKeyName,".key");
+  char          *fileKeyName = malloc(strlen(owner_pwname)+strlen(argv[1]+20));
+
+  memcpy(fileKeyName,argv[2],sizeof(argv[2])+1);
+  strcat(fileKeyName,".");
+  strcat(fileKeyName,owner_pwname);
+  
+  strcat(fileKeyName,".key");
+  
+  
   uid_t userID = getuid();
   struct passwd *user_pws = getpwuid(userID);
   char* user_pwname = user_pws->pw_name;//get the user login name;
   char* user_pwdir = user_pws->pw_dir;
-  char          *outputFileKeyName = malloc(user_pwname)+strlen(argv[2]+10);
-  outputFileKeyName = strcat(argv[2]+".enc.");
-  outputFileKeyName = strcat(outputFileKeyName,user_pwname);
-  outputFileKeyName = strcat(outputFileKeyName,".key");
+  char          *outputFileKeyName = malloc(user_pwname)+strlen(argv[2]+20);
+  
+  memcpy(outputFileKeyName,argv[2],sizeof(argv[2])+1);
+  strcat(outputFileKeyName,".");
+  strcat(outputFileKeyName,user_pwname);
+  strcat(outputFileKeyName,".key");
   
  /*==============================================
      Check Check Check Check Check Check
@@ -128,33 +143,30 @@ main(int argc, char **argv){
   checkCryptNormal(ret,"cryptAddRandom",__LINE__);
   
   
-  
-   /*======================================================
-    Get decrypted data from file and write to stdout
-    ======================================================
-   */
+   /*=============================================
+    Open DATAFILE and get data
+    =============================================
+  */
+  printf("%s\n",fileKeyName);
   encDataFd=open(fileKeyName,O_RDONLY);
-  if (encDataFd<=0){perror("(2) open encDataFd");exit(encDataFd);}
+  if (clrDataFd<=0){perror("open encData");exit(encDataFd);}
   ret=fstat(encDataFd,&encDataFileInfo);
   if (ret!=0){perror("fstat encDataFd");exit(ret);}
   encDataSize=encDataFileInfo.st_size;
-  encDataPtr=malloc(encDataSize);
+  encDataPtr=malloc(encDataFileInfo.st_size);
   if (encDataPtr==NULL){perror("malloc encData");exit(__LINE__);}
-
   ret=read(encDataFd,encDataPtr,encDataSize);
   if (ret!=encDataSize){perror("read encData");exit(ret);}
-  close(encDataFd);
-  
-  
-   /*=================================================
-    Decrypt the key
+  close(clrDataFd);
+  /*=================================================
+    Decrypt the data
     =================================================
   */
 
-  keyFile=malloc(  strlen(owner_pw_dir )
+  keyFile=malloc(  strlen(owner_pwdir)
                  + strlen("/.gnupg/secring.gpg") + 1);
   if (keyFile==NULL){perror("malloc");exit(__LINE__);}
-  strcpy(keyFile,owner_pw_dir);
+  strcpy(keyFile,userInfo->pw_dir);
   strcat(keyFile,"/.gnupg/secring.gpg");
   printf("Getting secret key from <%s>\n",keyFile);
 
@@ -237,11 +249,13 @@ main(int argc, char **argv){
   ret=cryptEnd();
   checkCryptNormal(ret,"cryptEnd",__LINE__);
   
-  /*===============================================
-    Encrypt Symmetric Key to a key file
-    ===============================================
+  /*====================================================
+    Part2 Encrypt the key with user's private key 
+    ====================================================
   */
-   /*====================================================
+  
+  
+  /*====================================================
     Get key file name 
     ====================================================
   */
@@ -273,7 +287,7 @@ main(int argc, char **argv){
   checkCryptNormal(ret,"cryptSetAttributeString",__LINE__);
   ret=cryptSetAttribute(dataEnv, CRYPT_ENVINFO_DATASIZE, strlen(argv[2])+1);
 
-  ret=cryptPushData(dataEnv,argv[2],strlen(argv[2])+1,&bytesCopied);
+  ret=cryptPushData(dataEnv,clrDataPtr,strlen(clrDataPtr)+1,&bytesCopied);
   checkCryptNormal(ret,"cryptPushData",__LINE__);
   ret=cryptFlushData(dataEnv);
   checkCryptNormal(ret,"cryptFlushData",__LINE__);
@@ -289,6 +303,7 @@ main(int argc, char **argv){
   checkCryptNormal(ret,"cryptDestroyEnvelope",__LINE__);
   cryptKeysetClose(keyset);
   checkCryptNormal(ret,"cryptKeysetClose",__LINE__);
+  
   /*==============================================
      
         write it to output file.
@@ -304,8 +319,4 @@ main(int argc, char **argv){
   close(encDataFd);
   free(encDataPtr);
 
-  
-  
-  
-  
   }
