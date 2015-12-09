@@ -100,7 +100,7 @@ void encData(char *keyFile, char *encKey, char *encDataPtr, int encDataSize, int
 	// printf(dataEnv);
 	// userInfoName = "Jialiang Chang";
 	// printf("%s\n",userInfoName );
-	ret=cryptSetAttributeString(dataEnv, CRYPT_ENVINFO_RECIPIENT, userInfoName,strlen(userInfoName));
+	ret=cryptSetAttributeString(dataEnv, CRYPT_ENVINFO_RECIPIENT, userInfoName,KEYSIZE);
 	// printf(dataEnv);
 	checkCryptNormal(ret,"cryptSetAttributeString",__LINE__);
 	//QQQ
@@ -232,9 +232,7 @@ main(int argc, char **argv){
   checkCryptNormal(ret,"cryptSetAttribute",__LINE__);
 
   ret=cryptPushData(dataEnv,encDataPtr,encDataSize,&bytesCopied);
-  int index;
-  for(index=0;index<encDataSize;index++) printf("%c",encDataPtr[index]);
-  printf("%d\n",bytesCopied);
+  
   /*  Expect non-zero return -- indicates need private key */
   ret=cryptGetAttribute(dataEnv, CRYPT_ATTRIBUTE_CURRENT, &reqAttrib); 
   if (reqAttrib != CRYPT_ENVINFO_PRIVATEKEY) 
