@@ -69,12 +69,16 @@ main(int argc, char **argv){
     Get key file name 
     ====================================================
   */
+  uid_t ownerID = getuid();
+  struct passwd *owner_pws = getpwuid(ownerID);
+  char* owner_pwname = owner_pws->pw_name;//get the user login name;
+  char* owner_pwdir = owner_pws->pw_dir;
   userInfo=getpwnam(argv[1]);
   if (userInfo==NULL){perror("getpwnam");exit(__LINE__);};
-  keyFile=malloc(  strlen(userInfo->pw_dir )
+  keyFile=malloc(  strlen(owner_pwdir )
                  + strlen("/.gnupg/pubring.gpg") + 1);
   if (keyFile==NULL){perror("malloc");exit(__LINE__);}
-  strcpy(keyFile,userInfo->pw_dir);
+  strcpy(keyFile,owner_pwdir);
   strcat(keyFile,"/.gnupg/pubring.gpg");
   printf("Getting key from <%s>\n",keyFile);
 
@@ -93,7 +97,7 @@ main(int argc, char **argv){
   ret=cryptSetAttribute(dataEnv, CRYPT_ENVINFO_KEYSET_ENCRYPT, keyset);
   checkCryptNormal(ret,"cryptSetAttribute",__LINE__);
   ret=cryptSetAttributeString(dataEnv, CRYPT_ENVINFO_RECIPIENT, 
-                              "pwcorbet",strlen(argv[1]));
+                              argv[1],strlen(argv[1]));
   checkCryptNormal(ret,"cryptSetAttributeString",__LINE__);
   ret=cryptSetAttribute(dataEnv, CRYPT_ENVINFO_DATASIZE, strlen(argv[2])+1);
 
@@ -120,10 +124,10 @@ main(int argc, char **argv){
     =================================================
   */
 
-  keyFile=malloc(  strlen(userInfo->pw_dir )
+  keyFile=malloc(  strlen(owner_pwdir )
                  + strlen("/.gnupg/secring.gpg") + 1);
   if (keyFile==NULL){perror("malloc");exit(__LINE__);}
-  strcpy(keyFile,userInfo->pw_dir);
+  strcpy(keyFile,owner_pwdir);
   strcat(keyFile,"/.gnupg/secring.gpg");
   printf("Getting secret key from <%s>\n",keyFile);
 

@@ -169,18 +169,16 @@ main(int argc, char **argv){
   strcat(fileKeyName,owner_pwname);
   
   strcat(fileKeyName,".key");
+  printf("%s\n",fileKeyName);
   
   
-  uid_t userID = getuid();
-  struct passwd *user_pws = getpwuid(userID);
-  char* user_pwname = user_pws->pw_name;//get the user login name;
-  char* user_pwdir = user_pws->pw_dir;
-  char          *outputFileKeyName = malloc(user_pwname)+strlen(argv[2]+20);
+  char          *outputFileKeyName = malloc(strlen(argv[1])+strlen(argv[2])+20);
   
-  memcpy(outputFileKeyName,argv[2],sizeof(argv[2])+1);
+  memcpy(outputFileKeyName,argv[2],strlen(argv[2])+1);
   strcat(outputFileKeyName,".");
-  strcat(outputFileKeyName,user_pwname);
+  strcat(outputFileKeyName,argv[1]);
   strcat(outputFileKeyName,".key");
+  printf("%s\n",outputFileKeyName);
   
  /*==============================================
      Check Check Check Check Check Check
@@ -201,9 +199,9 @@ main(int argc, char **argv){
  /*=============================================
     Open DATAFILE and get data
     =============================================
-  */
+ */
   encDataFd=open(fileKeyName,O_RDONLY);
-  if (encDataFd<=0){perror("open clrData");exit(encDataFd);}
+  if (encDataFd<=0){perror("open encData");exit(encDataFd);}
   ret=fstat(encDataFd,&encDataFileInfo);
   if (ret!=0){perror("fstat encDataFd");exit(ret);}
   encDataSize=encDataFileInfo.st_size;
@@ -212,24 +210,17 @@ main(int argc, char **argv){
   ret=read(encDataFd,encDataPtr,encDataSize);
   if (ret!=encDataSize){perror("read encData");exit(ret);}
   close(encDataFd);
-
   
-  if (encDataPtr==NULL){perror("malloc");exit(__LINE__);}
-  ret=cryptPopData(dataEnv,encDataPtr,encDataSize,&bytesCopied);
-  printf("cryptPopData returned <%d> bytes of encrypted data\n",bytesCopied);
-  encDataSize=bytesCopied;
-  
-  /*=================================================
-    Decrypt the data
+ /*=================================================
+    Decrypt the key
     =================================================
   */
-	
-  keyFile=malloc(strlen(owner_pwdir)
+   
+  keyFile=malloc(  strlen(owner_pwdir )
                  + strlen("/.gnupg/secring.gpg") + 1);
   if (keyFile==NULL){perror("malloc");exit(__LINE__);}
   strcpy(keyFile,owner_pwdir);
   strcat(keyFile,"/.gnupg/secring.gpg");
-  printf("%s\n",keyFile);
   printf("Getting secret key from <%s>\n",keyFile);
 
   ret=cryptKeysetOpen(&keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, keyFile, CRYPT_KEYOPT_READONLY);
@@ -239,12 +230,15 @@ main(int argc, char **argv){
   checkCryptNormal(ret,"cryptCreateEnvelope",__LINE__);
   ret=cryptSetAttribute(dataEnv, CRYPT_ENVINFO_KEYSET_DECRYPT, keyset);
   checkCryptNormal(ret,"cryptSetAttribute",__LINE__);
-  
+
   ret=cryptPushData(dataEnv,encDataPtr,encDataSize,&bytesCopied);
+  int index;
+  for(index=0;index<encDataSize;index++) printf("%c",encDataPtr[index]);
+  printf("%d\n",bytesCopied);
   /*  Expect non-zero return -- indicates need private key */
   ret=cryptGetAttribute(dataEnv, CRYPT_ATTRIBUTE_CURRENT, &reqAttrib); 
   if (reqAttrib != CRYPT_ENVINFO_PRIVATEKEY) 
-       {printf("Decrypt error\n");exit(ret);}
+       {perror("Decrypt error\n");exit(ret);}
    
   ret=cryptGetAttributeString(dataEnv, CRYPT_ENVINFO_PRIVATEKEY_LABEL, label, &labelLength);
   label[labelLength]='\0';
@@ -292,7 +286,7 @@ main(int argc, char **argv){
   ret=cryptFlushData(dataEnv);
   checkCryptNormal(ret,"cryptFlushData",__LINE__);
 
-  clrDataSize=strlen(encDataPtr)+1;
+  clrDataSize=strlen(argv[2])+1;
   clrDataPtr=malloc(clrDataSize);
   if (clrDataPtr==NULL){perror("malloc");exit(__LINE__);}
   bzero(clrDataPtr,clrDataSize);
@@ -308,7 +302,8 @@ main(int argc, char **argv){
   printf("Bytes decrypted <%d>\n",bytesCopied);
   for (i=0;i<bytesCopied;i++){printf("%c",clrDataPtr[i]);}
 
-
+  ret=cryptEnd();
+  checkCryptNormal(ret,"cryptEnd",__LINE__);
   
   /*====================================================
     Part2 Encrypt the key with user's private key 
