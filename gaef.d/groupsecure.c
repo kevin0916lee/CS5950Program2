@@ -351,7 +351,6 @@ int main(int argc, char const *argv[])
 	if (ret!=bytesCopied){perror("write encData");exit(ret);}
 	close(encDataFd);
 	free(encDataPtr);
-
 	ret=cryptEnd();
 	checkCryptNormal(ret,"cryptEnd",__LINE__);
 
