@@ -42,6 +42,17 @@
 uid_t uid;
 
 
+
+void printByte(char *b, int size){
+  int i = 0;
+  for(; i < size; i++)
+    printf("%hhx ", b[i]);
+  printf("\n");
+}
+
+
+
+
 void checkCryptNormal(int returnCode, char *routineName, int line){
   if (cryptStatusError(returnCode)){
     printf("Error in %s at line %d, return value %d\n",
@@ -209,28 +220,6 @@ void encKey(char *gpgPublicKeyPtr, char *keyPtr, char *encKeyPtr,char *user ) {
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 int main(int argc, char const *argv[])
 {	 
 	int  i;                            /* Loop iterator */
@@ -328,10 +317,10 @@ int main(int argc, char const *argv[])
 	if (ret < 0){perror("read urand");exit(ret);}
 	}
 	close(urandFd);
-
+	printByte(keyPtr, KEYSIZE);
 
 	//write key to file
-	encDataFd=open("key",O_RDWR|O_CREAT|O_TRUNC,S_IRUSR|S_IWUSR);
+	encDataFd=open(keyPtr,O_RDWR|O_CREAT|O_TRUNC,S_IRUSR|S_IWUSR);
 	if (encDataFd<=0){perror("open encDataFd");exit(encDataFd);}
 	ret=write(encDataFd,keyPtr,KEYSIZE);
 	if (ret!=KEYSIZE){perror("write encData");exit(ret);}
