@@ -14,4 +14,6 @@ rmsecure:rmsecure.c
 clean:
 	rm groupsecure
 	rm getsecure
+	rm rmsecure
+	rm addsecure
 	rm *.enc*
