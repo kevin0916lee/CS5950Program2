@@ -68,62 +68,7 @@ void fileChecker(char *file){
     }
 
 }
-void encData(char *keyFile, char *encKey, char *encDataPtr, int encDataSize, int id){
-	int  ret;                          /* Return value */
-	int bytesCopied;
-  	CRYPT_ENVELOPE dataEnv;    /* Envelope for enc */
-	CRYPT_KEYSET   keyset;     /* GPG keyset */
 
-
-	cryptInit();
-	struct passwd *userInfo;     
-	char *userInfoName;
-  	userInfo = getpwuid(id);
-	userInfoName = userInfo->pw_name;
-	ret=cryptAddRandom( NULL , CRYPT_RANDOM_SLOWPOLL);
-  	checkCryptNormal(ret,"cryptAddRandom",__LINE__);
-
-  	/*====================================================
-    Encrypt key with GPG public key
-    Email address is for recipient
-    ===================================================
-  	*/
-
-  
-	ret=cryptKeysetOpen(&keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, keyFile, CRYPT_KEYOPT_READONLY);
-	free(keyFile);
-	checkCryptNormal(ret,"cryptKeysetOpen",__LINE__);
-	ret=cryptCreateEnvelope(&dataEnv, CRYPT_UNUSED, CRYPT_FORMAT_PGP);
-	checkCryptNormal(ret,"cryptCreateEnvelope",__LINE__);
-	ret=cryptSetAttribute(dataEnv, CRYPT_ENVINFO_KEYSET_ENCRYPT, keyset);
-	checkCryptNormal(ret,"cryptSetAttribute",__LINE__);
-	// printf(dataEnv);
-	// userInfoName = "Jialiang Chang";
-	// printf("%s\n",userInfoName );
-	ret=cryptSetAttributeString(dataEnv, CRYPT_ENVINFO_RECIPIENT, userInfoName,KEYSIZE);
-	// printf(dataEnv);
-	checkCryptNormal(ret,"cryptSetAttributeString",__LINE__);
-	//QQQ
-	ret=cryptSetAttribute(dataEnv, CRYPT_ENVINFO_DATASIZE, KEYSIZE+1);
-
-	ret=cryptPushData(dataEnv,encKey,KEYSIZE+1,&bytesCopied);
-	checkCryptNormal(ret,"cryptPushData",__LINE__);
-	ret=cryptFlushData(dataEnv);
-	checkCryptNormal(ret,"cryptFlushData",__LINE__);
-
-	// encDataSize=strlen(argv[2])+1+1028;
-	// encDataPtr=malloc(encDataSize);
-
-	if (encDataPtr==NULL){perror("malloc");exit(__LINE__);}
-	ret=cryptPopData(dataEnv,encDataPtr,encDataSize,&bytesCopied);
-	printf("cryptPopData returned <%d> bytes of encrypted data\n",bytesCopied);
-	encDataSize=bytesCopied;
-
-	ret=cryptDestroyEnvelope(dataEnv);  
-	checkCryptNormal(ret,"cryptDestroyEnvelope",__LINE__);
-	cryptKeysetClose(keyset);
-	checkCryptNormal(ret,"cryptKeysetClose",__LINE__);
-}
 void checkCryptNormal(int returnCode, char *routineName, int line){
   if (cryptStatusError(returnCode)){
     printf("Error in %s at line %d, return value %d\n",
@@ -187,13 +132,7 @@ main(int argc, char **argv){
   if (argc!=3) {printf("Wrong number of arguments\n");exit(1);}
   fileChecker(argv[2]);
   
-   /*==============================================
-     Cryptlib initialization
-    ==============================================
-   */
-  cryptInit();
-  ret=cryptAddRandom( NULL , CRYPT_RANDOM_SLOWPOLL);
-  checkCryptNormal(ret,"cryptAddRandom",__LINE__);
+  
   
   
  /*=============================================
@@ -210,6 +149,13 @@ main(int argc, char **argv){
   ret=read(encDataFd,encDataPtr,encDataSize);
   if (ret!=encDataSize){perror("read encData");exit(ret);}
   close(encDataFd);
+   /*==============================================
+     Cryptlib initialization
+    ==============================================
+   */
+  //cryptInit();
+  //ret=cryptAddRandom( NULL , CRYPT_RANDOM_SLOWPOLL);
+  //checkCryptNormal(ret,"cryptAddRandom",__LINE__);
   
  /*=================================================
     Decrypt the key
@@ -223,6 +169,10 @@ main(int argc, char **argv){
   strcat(keyFile,"/.gnupg/secring.gpg");
   printf("Getting secret key from <%s>\n",keyFile);
 
+ //Decrypt key
+  cryptInit();
+  ret=cryptAddRandom( NULL , CRYPT_RANDOM_SLOWPOLL);
+  checkCryptNormal(ret,"cryptAddRandom",__LINE__);
   ret=cryptKeysetOpen(&keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, keyFile, CRYPT_KEYOPT_READONLY);
   free(keyFile);
   checkCryptNormal(ret,"cryptKeysetOpen",__LINE__);
@@ -230,61 +180,61 @@ main(int argc, char **argv){
   checkCryptNormal(ret,"cryptCreateEnvelope",__LINE__);
   ret=cryptSetAttribute(dataEnv, CRYPT_ENVINFO_KEYSET_DECRYPT, keyset);
   checkCryptNormal(ret,"cryptSetAttribute",__LINE__);
-
   ret=cryptPushData(dataEnv,encDataPtr,encDataSize,&bytesCopied);
-  
   /*  Expect non-zero return -- indicates need private key */
   ret=cryptGetAttribute(dataEnv, CRYPT_ATTRIBUTE_CURRENT, &reqAttrib); 
   if (reqAttrib != CRYPT_ENVINFO_PRIVATEKEY) 
-       {perror("Decrypt error\n");exit(ret);}
-   
+     {printf("Decrypt error\n");exit(ret);}
   ret=cryptGetAttributeString(dataEnv, CRYPT_ENVINFO_PRIVATEKEY_LABEL, label, &labelLength);
   label[labelLength]='\0';
-  checkCryptNormal(ret,"cryptGetAttributeString",__LINE__);  
+  checkCryptNormal(ret,"cryptGetAttributeString",__LINE__); 
 
-
+  
   /*===============================================
     Get the passphrase
     ===============================================
   */
-   tcgetattr(STDIN_FILENO, &ts);
-   ots = ts;
+
+  tcgetattr(STDIN_FILENO, &ts);
+  ots = ts;
 
 
-   ts.c_lflag &= ~ECHO;
-   ts.c_lflag |= ECHONL;
-   tcsetattr(STDIN_FILENO, TCSAFLUSH, &ts);
+  ts.c_lflag &= ~ECHO;
+  ts.c_lflag |= ECHONL;
+  tcsetattr(STDIN_FILENO, TCSAFLUSH, &ts);
 
 
-   tcgetattr(STDIN_FILENO, &ts);
-   if (ts.c_lflag & ECHO) {
-      fprintf(stderr, "Failed to turn off echo\n");
-      tcsetattr(STDIN_FILENO, TCSANOW, &ots);
-      exit(1);
-   }
+  tcgetattr(STDIN_FILENO, &ts);
+  if (ts.c_lflag & ECHO) {
+    fprintf(stderr, "Failed to turn off echo\n");
+    tcsetattr(STDIN_FILENO, TCSANOW, &ots);
+    exit(1);
+  }
 
-   printf("Enter password for <%s>: ",label);
-   fflush(stdout);
-   fgets(passbuf, 1024, stdin);
+  printf("Enter password for <%s>: ",label);
+  fflush(stdout);
+  fgets(passbuf, 1024, stdin);
 
-   tcsetattr(STDIN_FILENO, TCSANOW, &ots);   
-  
-   ret=cryptSetAttributeString(dataEnv, CRYPT_ENVINFO_PASSWORD,
-                               passbuf, strlen(passbuf)-1);
-   if (ret != CRYPT_OK) {
-     if (ret=CRYPT_ERROR_WRONGKEY) {
-         printf("Wrong Key\n");
-         exit(ret);
-     }else{ 
-         printf("cryptSetAttributeString line %d returned <%d>\n",__LINE__,ret);
-         exit(ret);
-     }
-   }
+  tcsetattr(STDIN_FILENO, TCSANOW, &ots);   
+
+  ret=cryptSetAttributeString(dataEnv, CRYPT_ENVINFO_PASSWORD,
+                             passbuf, strlen(passbuf)-1);
+  if (ret != CRYPT_OK) {
+    if (ret=CRYPT_ERROR_WRONGKEY) {
+      printf("Wrong Key\n");
+      exit(ret);
+    }else{ 
+      printf("cryptSetAttributeString line %d returned <%d>\n",__LINE__,ret);
+      exit(ret);
+    }
+  }
+
+
 
   ret=cryptFlushData(dataEnv);
   checkCryptNormal(ret,"cryptFlushData",__LINE__);
 
-  clrDataSize=strlen(argv[2])+1;
+  clrDataSize=KEYSIZE;
   clrDataPtr=malloc(clrDataSize);
   if (clrDataPtr==NULL){perror("malloc");exit(__LINE__);}
   bzero(clrDataPtr,clrDataSize);
@@ -298,8 +248,7 @@ main(int argc, char **argv){
   checkCryptNormal(ret,"cryptKeysetClose",__LINE__);
 
   printf("Bytes decrypted <%d>\n",bytesCopied);
-  for (i=0;i<bytesCopied;i++){printf("%c",clrDataPtr[i]);}
-
+   for (i=0;i<bytesCopied;i++){printf("%c",clrDataPtr[i]);}
   ret=cryptEnd();
   checkCryptNormal(ret,"cryptEnd",__LINE__);
   
@@ -308,19 +257,23 @@ main(int argc, char **argv){
     ====================================================
   */
   
-  
+    /*==============================================
+     Cryptlib initialization
+    ==============================================
+   */
+  cryptInit();
+  ret=cryptAddRandom( NULL , CRYPT_RANDOM_SLOWPOLL);
+  checkCryptNormal(ret,"cryptAddRandom",__LINE__);
   /*====================================================
     Get key file name 
     ====================================================
   */
-  userInfo=getpwnam(argv[1]);
-  if (userInfo==NULL){perror("getpwnam");exit(__LINE__);};
-  keyFile=malloc(  strlen(userInfo->pw_dir )
+  keyFile=malloc(  strlen(owner_pwdir )
                  + strlen("/.gnupg/pubring.gpg") + 1);
   if (keyFile==NULL){perror("malloc");exit(__LINE__);}
-  strcpy(keyFile,userInfo->pw_dir);
+  strcpy(keyFile,owner_pwdir);
   strcat(keyFile,"/.gnupg/pubring.gpg");
-  printf("Getting key from <%s>\n",keyFile);
+  printf("Getting secret key from <%s>\n",keyFile);
 
   /*====================================================
     Encrypt key with GPG public key
@@ -337,11 +290,11 @@ main(int argc, char **argv){
   ret=cryptSetAttribute(dataEnv, CRYPT_ENVINFO_KEYSET_ENCRYPT, keyset);
   checkCryptNormal(ret,"cryptSetAttribute",__LINE__);
   ret=cryptSetAttributeString(dataEnv, CRYPT_ENVINFO_RECIPIENT, 
-                              userInfo,strlen(argv[1]));
+                              argv[1],strlen(argv[1]));
   checkCryptNormal(ret,"cryptSetAttributeString",__LINE__);
-  ret=cryptSetAttribute(dataEnv, CRYPT_ENVINFO_DATASIZE, strlen(argv[1])+1);
+  ret=cryptSetAttribute(dataEnv, CRYPT_ENVINFO_DATASIZE, KEYSIZE);
 
-  ret=cryptPushData(dataEnv,clrDataPtr,strlen(clrDataPtr)+1,&bytesCopied);
+  ret=cryptPushData(dataEnv,clrDataPtr,KEYSIZE,&bytesCopied);
   checkCryptNormal(ret,"cryptPushData",__LINE__);
   ret=cryptFlushData(dataEnv);
   checkCryptNormal(ret,"cryptFlushData",__LINE__);

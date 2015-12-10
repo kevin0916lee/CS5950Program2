@@ -172,6 +172,7 @@ int main(int argc, char const *argv[])
 
   //Open gpg encrepted key
   encKeyFd=open(encKey, O_RDONLY);
+  printf("%s\n",encKeyFd);
   if (encKeyFd<=0){perror("(2) open encKeyFd");exit(encKeyFd);}
   ret=fstat(encKeyFd,&fileStat);
   if (ret!=0){perror("fstat encKeyFd");exit(ret);}
