@@ -42,4 +42,9 @@ main(int argc, char **argv){
      Remove the file 
     ==============================================
    */
+   int status = remove(argv[1]);
+   if( status == 0 ){
+	   printf("%s file deleted successfully.\n",argv[1]);
+	   return 0;
+	}
 }
