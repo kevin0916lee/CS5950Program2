@@ -119,8 +119,8 @@ main(int argc, char **argv){
   
   char          *outputFileKeyName = malloc(strlen(argv[1])+strlen(argv[2])+20);
   
-  memcpy(outputFileKeyName,argv[2],strlen(argv[2])+1);
-  strcat(outputFileKeyName,".");
+  strcpy(outputFileKeyName,argv[2]);
+  strcat(outputFileKeyName,".enc.");
   strcat(outputFileKeyName,argv[1]);
   strcat(outputFileKeyName,".key");
   printf("%s\n",outputFileKeyName);
@@ -139,7 +139,7 @@ main(int argc, char **argv){
     Open DATAFILE and get data
     =============================================
  */
-  encDataFd=open(fileKeyName,O_RDONLY);
+  encDataFd=open(fileKeyName,O_RDWR|O_CREAT|O_TRUNC,S_IRUSR|S_IWUSR);
   if (encDataFd<=0){perror("open encData1");exit(encDataFd);}
   ret=fstat(encDataFd,&encDataFileInfo);
   if (ret!=0){perror("fstat encDataFd");exit(ret);}
