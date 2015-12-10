@@ -15,6 +15,7 @@
   b.BLOWFISH reference: https://en.wikipedia.org/wiki/Blowfish_(cipher)
 
 6. TODO:
+  1.if the user does not have a key in the key file
   EX1.add comments
   EX2.clean up the code
 ----------------------------------------------------------*/
@@ -49,43 +50,34 @@ void checkCryptNormal(int returnCode, char *routineName, int line){
 void fileChecker(char *file){
   
   uid_t ownerID;
-    int f = -1;
-    struct stat fs;
-
-    //Check file owner
-    f = open(file, O_RDONLY);
-
-    if (f < 0){
-        printf("slient exit\n");
-        exit (1);
-    }
-
-    if (fstat(f, &fs)<0)
-    {
-        printf("slient exit\n");
-        exit (1);
-    }
-
-    ownerID = fs.st_uid;
-
+  int f = -1;
+  struct stat fs;
+  //Check file owner
+  f = open(file, O_RDONLY);
+  if (f < 0){
+      printf("slient exit\n");
+      exit (1);
+  }
+  if (fstat(f, &fs)<0)
+  {
+      printf("slient exit\n");
+      exit (1);
+  }
+  ownerID = fs.st_uid;
   uid = getuid();
-
   if (ownerID != uid) {
     printf("slient exit\n");
         exit (1);
   }
-
   //Check if the file is a regular file
   if ( (fs.st_mode & S_IFMT) != S_IFREG ) {
     printf("slient exit\n");
         exit (1);
   }
-
   if(close(f) < 0){
         printf("slient exit\n");
         exit (1);
     }
-
 }
 
 
@@ -97,7 +89,6 @@ void getPrivateKeyName(char *keyFile, int id) {
   if (keyFile==NULL){perror("malloc");exit(__LINE__);}
   strcpy(keyFile,userInfo->pw_dir);
   strcat(keyFile,"/.gnupg/secring.gpg");
-
   printf("Getting secret key from <%s>\n",keyFile);
 
 }
@@ -225,42 +216,39 @@ int main(int argc, char const *argv[])
     ===============================================
   */
 
+  tcgetattr(STDIN_FILENO, &ts);
+  ots = ts;
 
+
+  ts.c_lflag &= ~ECHO;
+  ts.c_lflag |= ECHONL;
+  tcsetattr(STDIN_FILENO, TCSAFLUSH, &ts);
 
 
   tcgetattr(STDIN_FILENO, &ts);
-   ots = ts;
+  if (ts.c_lflag & ECHO) {
+    fprintf(stderr, "Failed to turn off echo\n");
+    tcsetattr(STDIN_FILENO, TCSANOW, &ots);
+    exit(1);
+  }
 
+  printf("Enter password for <%s>: ",label);
+  fflush(stdout);
+  fgets(passbuf, 1024, stdin);
 
-   ts.c_lflag &= ~ECHO;
-   ts.c_lflag |= ECHONL;
-   tcsetattr(STDIN_FILENO, TCSAFLUSH, &ts);
+  tcsetattr(STDIN_FILENO, TCSANOW, &ots);   
 
-
-   tcgetattr(STDIN_FILENO, &ts);
-   if (ts.c_lflag & ECHO) {
-      fprintf(stderr, "Failed to turn off echo\n");
-      tcsetattr(STDIN_FILENO, TCSANOW, &ots);
-      exit(1);
-   }
-
-   printf("Enter password for <%s>: ",label);
-   fflush(stdout);
-   fgets(passbuf, 1024, stdin);
-
-   tcsetattr(STDIN_FILENO, TCSANOW, &ots);   
-  
-   ret=cryptSetAttributeString(dataEnv, CRYPT_ENVINFO_PASSWORD,
-                               passbuf, strlen(passbuf)-1);
-   if (ret != CRYPT_OK) {
-     if (ret=CRYPT_ERROR_WRONGKEY) {
-         printf("Wrong Key\n");
-         exit(ret);
-     }else{ 
-         printf("cryptSetAttributeString line %d returned <%d>\n",__LINE__,ret);
-         exit(ret);
-     }
-   }
+  ret=cryptSetAttributeString(dataEnv, CRYPT_ENVINFO_PASSWORD,
+                             passbuf, strlen(passbuf)-1);
+  if (ret != CRYPT_OK) {
+    if (ret=CRYPT_ERROR_WRONGKEY) {
+      printf("Wrong Key\n");
+      exit(ret);
+    }else{ 
+      printf("cryptSetAttributeString line %d returned <%d>\n",__LINE__,ret);
+      exit(ret);
+    }
+  }
 
 
 
@@ -298,10 +286,6 @@ int main(int argc, char const *argv[])
   ret=read(encFileFd,encFilePtr,encFileSize);
   if (ret!=encFileSize){perror("read encData");exit(ret);}
   close(encFileFd);
-
-
-// ----------------------------------------------------------------
-
 
 
   //Decrypt and get the content of decrepted file

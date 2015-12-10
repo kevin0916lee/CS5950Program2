@@ -17,8 +17,8 @@
 
 6. TODO:
   a.should check pubring.gpg exists//DONE
-  b.indicate which key is used to encrypt the file
-  c.let owner of the file decide whether to delete the file or not
+  b.indicate which key is used to encrypt the file//DONE
+  c.let owner of the file decide whether to delete the file or not//DONE
   EX1.add comments
   EX2.clean up the code
 ----------------------------------------------------------*/
@@ -43,16 +43,6 @@ uid_t uid;
 
 
 
-void printByte(char *b, int size){
-  int i = 0;
-  for(; i < size; i++)
-    printf("%hhx ", b[i]);
-  printf("\n");
-}
-
-
-
-
 void checkCryptNormal(int returnCode, char *routineName, int line){
   if (cryptStatusError(returnCode)){
     printf("Error in %s at line %d, return value %d\n",
@@ -64,7 +54,6 @@ void checkCryptNormal(int returnCode, char *routineName, int line){
 
 //File owner and states checker
 void fileChecker(char *file){
-	
 	uid_t ownerID;
     int f = -1;
     struct stat fs;
@@ -95,7 +84,6 @@ void fileChecker(char *file){
         printf("slient exit\n");
         exit (1);
     }
-
 }
 
 
@@ -116,10 +104,11 @@ void genKey(char * keyPtr, int keySize){
 
 //Get public key name
 void getPublicKeyName(char *keyFile, int id) {
+	char label[100];           /* Public key label */
+    int  labelLength;          /* Length of label */
 	struct passwd *userInfo;      
 	userInfo = getpwuid(id);
 	if (userInfo == NULL) { perror("getpwuid"); exit(__LINE__); }
-
 	if (keyFile == NULL) { perror("malloc"); exit(__LINE__); }
 	strcpy(keyFile, userInfo->pw_dir);
 	strcat(keyFile, "/.gnupg/pubring.gpg");
@@ -135,7 +124,6 @@ void getPublicKeyName(char *keyFile, int id) {
 
 
 
-//main(int argc, char **argv){
 void encKey(char *gpgPublicKeyPtr, char *keyPtr, char *encKeyPtr,char *user ) {
 
   int  ret;            /* Return code */
@@ -168,17 +156,10 @@ void encKey(char *gpgPublicKeyPtr, char *keyPtr, char *encKeyPtr,char *user ) {
   checkCryptNormal(ret,"cryptAddRandom",__LINE__);
 
   /*====================================================
-    Get key file name
-    ====================================================
-  */
-  userInfo=getpwnam(user);
-  if (userInfo==NULL){perror("getpwnam");exit(__LINE__);};
-  /*====================================================
     Encrypt key with GPG public key
     Email address is for recipient
     ===================================================
   */
-
 
   ret=cryptKeysetOpen(&keyset, CRYPT_UNUSED, CRYPT_KEYSET_FILE, gpgPublicKeyPtr, CRYPT_KEYOPT_READONLY);
   free(gpgPublicKeyPtr);
@@ -189,6 +170,9 @@ void encKey(char *gpgPublicKeyPtr, char *keyPtr, char *encKeyPtr,char *user ) {
   checkCryptNormal(ret,"cryptSetAttribute",__LINE__);
   ret=cryptSetAttributeString(dataEnv, CRYPT_ENVINFO_RECIPIENT,
                               user,strlen(user));
+  //Output message that indicate which key was used to encrypt the file key
+  printf("The gpg public key owned by <%s> was used to encrypt the file key",user);
+
   checkCryptNormal(ret,"cryptSetAttributeString",__LINE__);
   ret=cryptSetAttribute(dataEnv, CRYPT_ENVINFO_DATASIZE, KEYSIZE);
   ret=cryptPushData(dataEnv,keyPtr,KEYSIZE,&bytesCopied);
@@ -242,9 +226,9 @@ int main(int argc, char const *argv[])
 	char *encKeyPtr;
 	char *key ;
 	char *keyPtr;
-	struct passwd *pws;       /* info for input user */
-	char   *pwname;       /* username */
-	char   *pwdir;        /* home directory */
+	struct passwd *pws;       			/* info for input user */
+	char   *pwname;       				/* username */
+	char   *pwdir;        				/* home directory */
 	char *gpgPublicKeyPtr;
 
 
@@ -265,7 +249,6 @@ int main(int argc, char const *argv[])
 
 	//Get encfile name
 	strcpy(encFile, argv[1]);
-	//TODO indicate which key is used to encrypt the file
 	strcat(encFile, ".enc");
 
 	//Get enckey name
@@ -317,9 +300,6 @@ int main(int argc, char const *argv[])
 	if (ret < 0){perror("read urand");exit(ret);}
 	}
 	close(urandFd);
-	printByte(keyPtr, KEYSIZE);
-
-	//write key to file
 	encDataFd=open(keyPtr,O_RDWR|O_CREAT|O_TRUNC,S_IRUSR|S_IWUSR);
 	if (encDataFd<=0){perror("open encDataFd");exit(encDataFd);}
 	ret=write(encDataFd,keyPtr,KEYSIZE);
@@ -384,6 +364,30 @@ int main(int argc, char const *argv[])
 
 	//Get the encrypted key
 	encKey(gpgPublicKeyPtr, keyPtr, encKeyPtr, pwname);
+
+
+	//Check if user want to delete the clear file or not
+	clrDataFd=open(argv[1], O_RDONLY);
+    if(clrDataFd < 0){
+        printf("slient exit\n");
+        exit(1);
+    }else{
+        printf("Do you want to delte the clear file<%s>? [y/n]\n", argv[1]);
+        char option;
+        int status;  
+        status = -1;
+        while (option = getchar()) {
+			if (option == 'y')
+				status = remove(argv[1]);
+				if( status == 0 ){
+					printf("%s file deleted successfully.\n",argv[1]);
+					return 0;
+				}
+			if (option == 'n')
+				return 0;
+			printf("Please input 'y' or 'n'\n");
+        }
+    }
 	return 0;
 }
 
