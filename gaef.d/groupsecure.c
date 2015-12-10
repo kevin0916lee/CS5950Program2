@@ -193,7 +193,7 @@ void encKey(char *gpgPublicKeyPtr, char *keyPtr, char *encKeyPtr,char *user ) {
   checkCryptNormal(ret,"cryptKeysetClose",__LINE__);
 
   encDataFd=open(encKeyPtr, O_RDWR|O_CREAT|O_TRUNC,S_IRUSR|S_IWUSR);
-  if (encDataFd<=0){perror("open encDataFd");exit(encDataFd);}
+  if (encDataFd<=0){perror("open encDataFd1");exit(encDataFd);}
   ret=write(encDataFd,encDataPtr,bytesCopied);
   if (ret!=bytesCopied){perror("write encData");exit(ret);}
   close(encDataFd);
@@ -300,11 +300,9 @@ int main(int argc, char const *argv[])
 	if (ret < 0){perror("read urand");exit(ret);}
 	}
 	close(urandFd);
-	encDataFd=open(keyPtr,O_RDWR|O_CREAT|O_TRUNC,S_IRUSR|S_IWUSR);
-	if (encDataFd<=0){perror("open encDataFd");exit(encDataFd);}
-	ret=write(encDataFd,keyPtr,KEYSIZE);
-	if (ret!=KEYSIZE){perror("write encData");exit(ret);}
-	close(encDataFd);
+
+
+
 
 
 	/*==============================================
