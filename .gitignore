@@ -2,3 +2,9 @@
 *.txt
 
 gaef.d/groupsecure
+
+*.key
+
+*.enc
+
+gaef.d/getsecure

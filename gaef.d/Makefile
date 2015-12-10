@@ -9,7 +9,6 @@ getsecure:getsecure.c
 addsecure:addsecure.c
 	gcc -o addsecure addsecure.c -lcl -ldl -lresolv -lpthread -Lcl342 -Icl342
 
-
 clean:
 	rm groupsecure
 	rm getsecure
