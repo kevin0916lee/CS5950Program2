@@ -108,7 +108,7 @@ main(int argc, char **argv){
   char* owner_pwname = owner_pws->pw_name;//get the user login name;
   char* owner_pwdir = owner_pws->pw_dir;
   char          *fileKeyName;
-  *fileKeyName = malloc(strlen(owner_pwname)+strlen(argv[2]+9));
+  *fileKeyName = malloc(strlen(owner_pwname)+strlen(argv[2]+10));
 
   strcpy(fileKeyName,argv[2]);
   strcat(fileKeyName,".enc.");
