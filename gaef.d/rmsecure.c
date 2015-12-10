@@ -8,6 +8,39 @@
 #include <string.h>
 #include <termios.h>
 #include <pwd.h>
+//File owner and states checker
+void fileChecker(char *file){
+	uid_t ownerID;
+    int f = -1;
+    struct stat fs;
+  	//Check file owner
+    f = open(file, O_RDONLY);
+
+    if (f < 0){
+        printf("slient exit\n");
+        exit (1);
+    }
+    if (fstat(f, &fs)<0)
+    {
+        printf("slient exit\n");
+        exit (1);
+    }
+    ownerID = fs.st_uid;
+	uid_t uid = getuid();
+	if (ownerID != uid) {
+		printf("slient exit\n");
+        exit (1);
+	}
+	//Check if the file is a regular file
+	if ( (fs.st_mode & S_IFMT) != S_IFREG ) {
+		printf("slient exit\n");
+        exit (1);
+	}
+	if(close(f) < 0){
+        printf("slient exit\n");
+        exit (1);
+    }
+}
 main(int argc, char **argv){
 
   uid_t ownerID = getuid();
