@@ -133,6 +133,7 @@ main(int argc, char **argv){
   char *fileName = malloc(strlen(argv[2])+5);
   strcpy(fileName,argv[2]);
   strcat(fileName,".enc");
+  
   fileChecker(fileName);
   
   
@@ -327,6 +328,11 @@ main(int argc, char **argv){
   ret=write(encDataFd,encDataPtr,bytesCopied);
   if (ret!=bytesCopied){perror("write encData");exit(ret);}
   close(encDataFd);
+  int chmodStat = chmod (outputFileKeyName, S_IWRITE| S_IREAD| S_IRGRP | S_IWGRP);
+  if(chmodStat<0){
+	  perror("failed to chmod");
+	  exit(-1);
+  }
   free(encDataPtr);
 
   }

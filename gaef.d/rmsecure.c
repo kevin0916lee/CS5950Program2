@@ -17,12 +17,12 @@ void fileChecker(char *file){
     f = open(file, O_RDONLY);
 
     if (f < 0){
-        printf("slient exit\n");
+        printf("slient exit1\n");
         exit (1);
     }
     if (fstat(f, &fs)<0)
     {
-        printf("slient exit\n");
+        printf("slient exit2\n");
         exit (1);
     }
     ownerID = fs.st_uid;
@@ -70,7 +70,11 @@ main(int argc, char **argv){
     ==============================================
    */
   if (argc!=3) {printf("Wrong number of arguments\n");exit(1);}
-  fileChecker(argv[2]);
+  char *fileName = malloc(strlen(argv[2])+5);
+  strcpy(fileName,argv[2]);
+  strcat(fileName,".enc");
+  
+  fileChecker(fileName);
   /*==============================================
      Remove the file 
     ==============================================
