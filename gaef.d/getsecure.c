@@ -85,8 +85,6 @@ void fileChecker(char *file){
 void getPrivateKeyName(char *keyFile, int id) {
   struct passwd *userInfo;      
   userInfo = getpwuid(id);
-  if (userInfo == NULL) { perror("getpwuid"); exit(__LINE__); }
-  if (keyFile==NULL){perror("malloc");exit(__LINE__);}
   strcpy(keyFile,userInfo->pw_dir);
   strcat(keyFile,"/.gnupg/secring.gpg");
   printf("Getting secret key from <%s>\n",keyFile);

@@ -370,7 +370,7 @@ int main(int argc, char const *argv[])
         printf("slient exit\n");
         exit(1);
     }else{
-        printf("Do you want to delte the clear file<%s>? [y/n]\n", argv[1]);
+        printf("Do you want to delete the clear file<%s>? [y/n]\n", argv[1]);
         char option;
         int status;  
         status = -1;

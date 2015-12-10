@@ -107,12 +107,12 @@ main(int argc, char **argv){
   struct passwd *owner_pws = getpwuid(ownerID);
   char* owner_pwname = owner_pws->pw_name;//get the user login name;
   char* owner_pwdir = owner_pws->pw_dir;
-  char          *fileKeyName = malloc(strlen(owner_pwname)+strlen(argv[2]+20));
+  char          *fileKeyName;
+  *fileKeyName = malloc(strlen(owner_pwname)+strlen(argv[2]+9));
 
-  memcpy(fileKeyName,argv[2],strlen(argv[2])+1);
-  strcat(fileKeyName,".");
+  strcpy(fileKeyName,argv[2]);
+  strcat(fileKeyName,".enc.");
   strcat(fileKeyName,owner_pwname);
-  
   strcat(fileKeyName,".key");
   printf("%s\n",fileKeyName);
   
@@ -140,7 +140,7 @@ main(int argc, char **argv){
     =============================================
  */
   encDataFd=open(fileKeyName,O_RDONLY);
-  if (encDataFd<=0){perror("open encData");exit(encDataFd);}
+  if (encDataFd<=0){perror("open encData1");exit(encDataFd);}
   ret=fstat(encDataFd,&encDataFileInfo);
   if (ret!=0){perror("fstat encDataFd");exit(ret);}
   encDataSize=encDataFileInfo.st_size;
