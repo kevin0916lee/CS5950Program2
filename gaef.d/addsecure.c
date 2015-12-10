@@ -139,7 +139,7 @@ main(int argc, char **argv){
     Open DATAFILE and get data
     =============================================
  */
-  encDataFd=open(fileKeyName,O_RDWR|O_CREAT|O_TRUNC,S_IRUSR|S_IWUSR);
+  encDataFd=open(fileKeyName,O_RDONLY);
   if (encDataFd<=0){perror("open encData1");exit(encDataFd);}
   ret=fstat(encDataFd,&encDataFileInfo);
   if (ret!=0){perror("fstat encDataFd");exit(ret);}

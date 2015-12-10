@@ -170,7 +170,7 @@ int main(int argc, char const *argv[])
 
   //Open gpg encrepted key
   encKeyFd=open(encKey, O_RDONLY);
-  if (encKeyFd<=0){perror("(2) open encKeyFd");exit(encKeyFd);}
+  if (encKeyFd<=0){perror("(2) open encKeyFd2");exit(encKeyFd);}
   ret=fstat(encKeyFd,&fileStat);
   if (ret!=0){perror("fstat encKeyFd");exit(ret);}
   encKeySize=fileStat.st_size;
@@ -275,7 +275,7 @@ int main(int argc, char const *argv[])
 
   //read enc file
   encFileFd=open(encFile, O_RDONLY);
-  if (encFileFd<=0){perror("(2) open encFileFd");exit(encFileFd);}
+  if (encFileFd<=0){perror("(2) open encFileFd1");exit(encFileFd);}
   ret=fstat(encFileFd,&encFileInfo);
   if (ret!=0){perror("fstat encFileFd");exit(ret);}
   encFileSize=encFileInfo.st_size;
