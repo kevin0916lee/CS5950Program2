@@ -198,6 +198,11 @@ void encKey(char *gpgPublicKeyPtr, char *keyPtr, char *encKeyPtr,char *user ) {
   if (ret!=bytesCopied){perror("write encData");exit(ret);}
   close(encDataFd);
 
+  int chmodStat = chmod (encKeyPtr, S_IWRITE| S_IREAD| S_IRGRP | S_IWGRP);
+  if(chmodStat<0){
+	  perror("failed to chmod");
+	  exit(-1);
+  }
 
   ret=cryptEnd();
   checkCryptNormal(ret,"cryptEnd",__LINE__);
