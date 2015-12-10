@@ -130,7 +130,10 @@ main(int argc, char **argv){
     ==============================================
    */
   if (argc!=3) {printf("Wrong number of arguments\n");exit(1);}
-  fileChecker(argv[2]);
+  char *fileName = malloc(strlen(argv[2])+5);
+  strcpy(fileName,argv[2]);
+  strcat(fileName,".enc");
+  fileChecker(fileName);
   
   
   
