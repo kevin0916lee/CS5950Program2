@@ -359,6 +359,11 @@ int main(int argc, char const *argv[])
 	ret=cryptEnd();
 	checkCryptNormal(ret,"cryptEnd",__LINE__);
 
+	int chmodStat = chmod (encFile, S_IWRITE| S_IREAD| S_IRGRP | S_IWGRP);
+  	if(chmodStat<0){
+	  perror("failed to chmod");
+	  exit(-1);
+  	}
 
 	//Get the pointer of the gpg public key
 	gpgPublicKeyPtr = malloc(1024);
