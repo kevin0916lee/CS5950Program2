@@ -1,4 +1,23 @@
-How to run and test the program?
+/*--------------------------------------------------------
+1. Hao Li & Jialiang Chang / Dec 11, 2015:
+
+2. Version log :1.Submitted by Dec 11,2015
+
+3. Precise examples / instructions to run this program:
+  Please take reference "How to run and test the program?" part written below
+
+4. Aim: generate a unique key for file, and then encrypt this file key using the passphrase of each user.
+
+5. Notes:
+  a.This is for Fall 2015 CS 5950 program2, taught by Professor Steve Carr, Western Michigan University.
+  b.This project is done by Hao Li and Jiangliang Chang. The addsecure.c and rmsecure.c are writtenby Hao Li and the groupsecure.c and getsecure.c are written by Jiangliang Chang.
+  b.BLOWFISH reference: https://en.wikipedia.org/wiki/Blowfish_(cipher)
+  c.GnuPG reference: https://www.gnupg.org
+
+----------------------------------------------------------*/
+
+
+#How to run and test the program?
 1. run make to compile all necessary files
 2. create a dummy file for testing purpose(dummy.txt)
 3. Assuming there are two users(owner and user), create gpg key-pair in owner account and user account respectively, then export the public key from user account, change the mod to 644 and import this public key into the public key ring of owner account
@@ -10,3 +29,19 @@ How to run and test the program?
 9. run ./getsecure dummy.txt in user account to get and print out the clear file data dummy.txt
 10. switch back to owner account.
 11. run ./rmsecure userID dummy.txt to remove the user's accessability to the dummy.txt. In this case, the file dummy.txt.enc.userid.key will be deleted.
+
+
+
+#Sample test script by Hao Li
+/*In the gae.f folder---------------------------------------
+
+./groupsecure dummy.txt
+./addsecure userID dummy.txt
+su userID
+./getsecure dummy.txt
+su ownerID
+./rmsecure userID dummy.txt
+./getsecure dummy.txt
+
+----------------------------------------------------------*/
+

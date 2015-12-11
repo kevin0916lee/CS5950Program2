@@ -1,8 +1,8 @@
 /*--------------------------------------------------------
 1. Jialiang Chang / Dec 09, 2015:
 
-2. Version log :1.written by Dec 09,2015
-
+2. Version log :1.written by Dec 09,2015 
+                2.v1.0 by Dec 11,2015
 
 3. Precise examples / instructions to run this program:
 > (in working gaef.d folder path)$ make
@@ -15,7 +15,6 @@
   b.BLOWFISH reference: https://en.wikipedia.org/wiki/Blowfish_(cipher)
 
 6. TODO:
-  1.if the user does not have a key in the key file
   EX1.add comments
   EX2.clean up the code
 ----------------------------------------------------------*/
@@ -81,7 +80,7 @@ void fileChecker(char *file){
 }
 
 
-//Get public key name
+//Get private key name
 void getPrivateKeyName(char *keyFile, int id) {
   struct passwd *userInfo;      
   userInfo = getpwuid(id);
@@ -143,7 +142,7 @@ int main(int argc, char const *argv[])
   uid = getuid();
   pws = getpwuid(uid);
   pwname = pws->pw_name;//get the user login name;
-  pwdir = pws->pw_dir;
+  pwdir = pws->pw_dir;//get the user dir path
 
   //Check arguments number 
   if (argc!=2) {
@@ -155,7 +154,6 @@ int main(int argc, char const *argv[])
   //Get encrepted file
   encFile = malloc(strlen(argv[1]) + 4);
   strcpy(encFile, argv[1]);
-  //TODO indicate which key is used to encrypt the file
   strcat(encFile, ".enc");
  
 
@@ -166,7 +164,6 @@ int main(int argc, char const *argv[])
   strcat(encKey, pwname);
   strcat(encKey, ".key");
 
-  //TODO check if user is permitted.
 
   //Open gpg encrepted key
   encKeyFd=open(encKey, O_RDONLY);

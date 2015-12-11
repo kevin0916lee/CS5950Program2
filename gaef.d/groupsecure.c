@@ -3,6 +3,7 @@
 
 2. Version log :1.written by Dec 03,2015
 				2.v0.9 by Dec 09,2015
+				3.v1.0 by Dec 11,2015
 
 3. Precise examples / instructions to run this program:
 > (in working gaef.d folder path)$ make
@@ -246,7 +247,6 @@ int main(int argc, char const *argv[])
 	pws = getpwuid(uid);
 	pwname = pws->pw_name;//get the user login name;
 	pwdir = pws->pw_dir;
-	//Check if the owner of the file and if the file is not an ordinary file.
 	fileChecker((char *)argv[1]);
 	//Generate key using /dev/urandom;
 	keyPtr=malloc(KEYSIZE);
