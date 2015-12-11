@@ -1,0 +1,12 @@
+How to run and test the program?
+1. run make to compile all necessary files
+2. create a dummy file for testing purpose(dummy.txt)
+3. Assuming there are two users(owner and user), create gpg key-pair in owner account and user account respectively, then export the public key from user account, change the mod to 644 and import this public key into the public key ring of owner account
+4. Make sure owner and user are in the same group.
+5. run ./groupsecure dummy file in owner account, get the dummy.txt.enc and dummy.txt.enc.ownerID.key. Owner could choose to delete the dummy.txt file or keep it.
+6. run ./addsecure userID dummy.txt in owner account to grant the user access to the dummy.txt, a new file dummy.txt.enc.userID.key will be generated.
+7. run ./getsecure dummy.txt in owner account to get and print out the clear file data dummy.txt.
+8. switch to user account.
+9. run ./getsecure dummy.txt in user account to get and print out the clear file data dummy.txt
+10. switch back to owner account.
+11. run ./rmsecure userID dummy.txt to remove the user's accessability to the dummy.txt. In this case, the file dummy.txt.enc.userid.key will be deleted.
