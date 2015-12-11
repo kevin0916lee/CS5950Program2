@@ -1,7 +1,0 @@
-./groupsecure $1
-./addsecure user1 $1
-su user1
-./getsecure $1
-su lihao
-./rmsecure user1 $1
-
